@@ -1,3 +1,6 @@
+// The dist/ folder can be deployed directly to GitHub Pages as static output.
+import { Pane } from 'tweakpane';
+
 const CONFIG = {
   PARTICLE_COUNT: 130,
   MAX_SPEED: 90,
@@ -9,6 +12,20 @@ const CONFIG = {
   INTERACTION_PULL: 36,
   INTERACTION_SWIRL: 22
 };
+
+const pane = new Pane();
+pane.addBinding(CONFIG, 'PARTICLE_COUNT', { min: 10, max: 500 }).on('change', () => {
+  createParticles();
+});
+pane.addBinding(CONFIG, 'MAX_SPEED', { min: 10, max: 200 });
+pane.addBinding(CONFIG, 'TRAIL_ALPHA', { min: 0.01, max: 0.2 });
+pane.addBinding(CONFIG, 'ORBIT_PULL', { min: 1, max: 40 });
+pane.addBinding(CONFIG, 'ORBIT_SPREAD', { min: 50, max: 500 });
+pane.addBinding(CONFIG, 'RANDOM_DRIFT', { min: 0, max: 15 });
+pane.addBinding(CONFIG, 'INTERACTION_RADIUS', { min: 20, max: 400 });
+pane.addBinding(CONFIG, 'INTERACTION_PULL', { min: 0, max: 100 });
+pane.addBinding(CONFIG, 'INTERACTION_SWIRL', { min: 0, max: 100 });
+
 
 const TWO_PI = Math.PI * 2;
 const canvas = document.getElementById('galaxy');
