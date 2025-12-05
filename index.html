@@ -27,14 +27,78 @@
 
     canvas {
       display: block;
+      position: fixed;
+      inset: 0;
       width: 100vw;
       height: 100vh;
       touch-action: none;
       cursor: crosshair;
+      z-index: 0;
     }
+
+    .controls-layer {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 2;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    sl-dialog::part(panel) {
+      backdrop-filter: blur(8px);
+      background: rgba(8, 12, 24, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .dialog-subtitle {
+      margin: 0 0 12px;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.95rem;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px 16px;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    sl-range::part(base) {
+      --track-color-active: #4bb5ff;
+    }
+
   </style>
 </head>
-<body>
+<body class="sl-theme-dark">
+  <div class="controls-layer">
+    <sl-button id="open-settings" variant="primary" size="small">Galaxy settings</sl-button>
+  </div>
+
+  <sl-dialog id="settings-dialog" label="Galaxy settings">
+    <p class="dialog-subtitle">Tweak particle behavior in real time.</p>
+    <div class="settings-grid">
+      <sl-range label="Particle count" min="40" max="400" step="10" data-config-key="PARTICLE_COUNT"></sl-range>
+      <sl-range label="Max speed" min="30" max="250" step="5" data-config-key="MAX_SPEED"></sl-range>
+      <sl-range label="Trail alpha" min="0.02" max="0.3" step="0.01" data-config-key="TRAIL_ALPHA"></sl-range>
+      <sl-range label="Orbit pull" min="4" max="30" step="1" data-config-key="ORBIT_PULL"></sl-range>
+      <sl-range label="Orbit spread" min="80" max="520" step="10" data-config-key="ORBIT_SPREAD"></sl-range>
+      <sl-range label="Random drift" min="0" max="18" step="0.5" data-config-key="RANDOM_DRIFT"></sl-range>
+      <sl-range label="Interaction radius" min="80" max="360" step="10" data-config-key="INTERACTION_RADIUS"></sl-range>
+      <sl-range label="Interaction pull" min="8" max="90" step="1" data-config-key="INTERACTION_PULL"></sl-range>
+      <sl-range label="Interaction swirl" min="0" max="60" step="1" data-config-key="INTERACTION_SWIRL"></sl-range>
+    </div>
+    <div slot="footer" class="dialog-actions">
+      <sl-button id="close-settings" variant="primary">Close</sl-button>
+    </div>
+  </sl-dialog>
+
   <canvas id="galaxy"></canvas>
   <script src="./main.js" type="module"></script>
 </body>

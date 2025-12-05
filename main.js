@@ -1,5 +1,7 @@
-// The dist/ folder can be deployed directly to GitHub Pages as static output.
-import { Pane } from 'tweakpane';
+import '@shoelace-style/shoelace/dist/themes/dark.css';
+import '@shoelace-style/shoelace/dist/components/button/button.js';
+import '@shoelace-style/shoelace/dist/components/dialog/dialog.js';
+import '@shoelace-style/shoelace/dist/components/range/range.js';
 
 const CONFIG = {
   PARTICLE_COUNT: 130,
@@ -13,21 +15,8 @@ const CONFIG = {
   INTERACTION_SWIRL: 22
 };
 
-const pane = new Pane();
-pane.addBinding(CONFIG, 'PARTICLE_COUNT', { min: 10, max: 500 }).on('change', () => {
-  createParticles();
-});
-pane.addBinding(CONFIG, 'MAX_SPEED', { min: 10, max: 200 });
-pane.addBinding(CONFIG, 'TRAIL_ALPHA', { min: 0.01, max: 0.2 });
-pane.addBinding(CONFIG, 'ORBIT_PULL', { min: 1, max: 40 });
-pane.addBinding(CONFIG, 'ORBIT_SPREAD', { min: 50, max: 500 });
-pane.addBinding(CONFIG, 'RANDOM_DRIFT', { min: 0, max: 15 });
-pane.addBinding(CONFIG, 'INTERACTION_RADIUS', { min: 20, max: 400 });
-pane.addBinding(CONFIG, 'INTERACTION_PULL', { min: 0, max: 100 });
-pane.addBinding(CONFIG, 'INTERACTION_SWIRL', { min: 0, max: 100 });
-
-
 const TWO_PI = Math.PI * 2;
+const BASE_PARTICLE_COUNT = CONFIG.PARTICLE_COUNT;
 const canvas = document.getElementById('galaxy');
 const ctx = canvas.getContext('2d');
 
@@ -42,11 +31,20 @@ const interaction = { active: false, x: 0, y: 0 };
 let particles = [];
 let lastTime = performance.now();
 
+function getOrbitSpread() {
+  const densityScale = Math.sqrt(CONFIG.PARTICLE_COUNT / BASE_PARTICLE_COUNT);
+  const spread = CONFIG.ORBIT_SPREAD * densityScale;
+  const maxSpread = Math.min(state.width, state.height) * 0.9;
+  return Math.min(spread, maxSpread);
+}
+
 class Particle {
   constructor(center) {
-    const spread = Math.min(CONFIG.ORBIT_SPREAD, Math.min(state.width, state.height) * 0.6);
-    this.orbitOffsetX = (Math.random() - 0.5) * spread;
-    this.orbitOffsetY = (Math.random() - 0.5) * spread;
+    const spread = getOrbitSpread();
+    const angle = Math.random() * TWO_PI;
+    const radius = Math.random() * (spread * 0.5);
+    this.orbitOffsetX = Math.cos(angle) * radius;
+    this.orbitOffsetY = Math.sin(angle) * radius;
     this.x = center.x + this.orbitOffsetX + (Math.random() - 0.5) * 30;
     this.y = center.y + this.orbitOffsetY + (Math.random() - 0.5) * 30;
     this.vx = (Math.random() - 0.5) * 10;
@@ -154,6 +152,17 @@ function createParticles() {
   }
 }
 
+function applyParticleCount(value) {
+  const target = Math.max(10, Math.round(value));
+  if (target === CONFIG.PARTICLE_COUNT) return;
+  CONFIG.PARTICLE_COUNT = target;
+  rerollOrbits();
+}
+
+function rerollOrbits() {
+  createParticles();
+}
+
 function handlePointerDown(event) {
   event.preventDefault();
   canvas.setPointerCapture?.(event.pointerId);
@@ -172,6 +181,55 @@ function handlePointerMove(event) {
 function handlePointerUp(event) {
   event.preventDefault();
   interaction.active = false;
+}
+
+function handleRangeChange(event) {
+  const control = event.target;
+  const key = control.dataset.configKey;
+  if (!key || !(key in CONFIG)) return;
+
+  let nextValue = parseFloat(control.value);
+  if (Number.isNaN(nextValue)) return;
+
+  if (key === 'TRAIL_ALPHA') {
+    nextValue = Math.min(Math.max(nextValue, 0.01), 0.5);
+  }
+
+  if (key === 'PARTICLE_COUNT') {
+    applyParticleCount(nextValue);
+    control.value = CONFIG.PARTICLE_COUNT;
+    return;
+  }
+
+  CONFIG[key] = nextValue;
+
+  if (key === 'ORBIT_SPREAD') {
+    rerollOrbits();
+  }
+}
+
+function initControls() {
+  const dialog = document.getElementById('settings-dialog');
+  const openButton = document.getElementById('open-settings');
+  const closeButton = document.getElementById('close-settings');
+  const controls = document.querySelectorAll('[data-config-key]');
+
+  if (openButton && dialog) {
+    openButton.addEventListener('click', () => dialog.show());
+  }
+
+  if (closeButton && dialog) {
+    closeButton.addEventListener('click', () => dialog.hide());
+  }
+
+  controls.forEach((control) => {
+    const key = control.dataset.configKey;
+    if (!key || !(key in CONFIG)) return;
+
+    control.value = CONFIG[key];
+    control.addEventListener('sl-input', handleRangeChange);
+    control.addEventListener('sl-change', handleRangeChange);
+  });
 }
 
 function drawBackground(time) {
@@ -236,6 +294,7 @@ function loop(now) {
 function init() {
   resizeCanvas();
   createParticles();
+  initControls();
   window.addEventListener('resize', resizeCanvas);
   canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
   canvas.addEventListener('pointermove', handlePointerMove, { passive: false });
